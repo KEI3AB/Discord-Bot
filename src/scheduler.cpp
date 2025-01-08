@@ -4,7 +4,7 @@ Scheduler::Scheduler(boost::asio::io_context& io_context, std::chrono::seconds i
     : timer(io_context), interval(interval) {}
 
 void Scheduler::start(const std::function<void()>& new_task) {
-    task = new_task;
+    task = new_task; //
     schedule_next();
 }
 
@@ -26,5 +26,4 @@ void Scheduler::schedule_next() {
     // если ошибка всё же есть, то кинуть RE
     // Поймать ошибку в fetch_currency_data.cpp (предварительное название) и кинуть дальше RE
     // Поймать ошибку в bot.cpp и завершить работу бота
-
-
+}
