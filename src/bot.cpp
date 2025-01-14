@@ -1,13 +1,15 @@
+#include "fetch_currency_data.hpp"
+#include "fetch_config_data.hpp"
 #include <dpp/dpp.h>
 #include <iostream>
-#include "token.h"
+#include <thread>
 
 
 int main() {
     std::string BOT_TOKEN;
     try {
-        BOT_TOKEN = get_bot_token();
-        std::cout << "Token loaded";
+        BOT_TOKEN = fetch_config_data("token");
+        std::cout << "Token loaded\n";
     } catch (const std::exception& error) {
         std::cerr << "Error: " << error.what() << std::endl;
         return 1;
@@ -74,30 +76,30 @@ int main() {
         } else if (event.command.get_command_name() == "embed") {
             dpp::embed embed = dpp::embed()
                 .set_color(dpp::colors::sti_blue)
-                .set_title("TITLE")
+                .set_title("Discord bot")
                 .set_url("https://dpp.dev/")
-                .set_author("AUTHOR NAME", "https://dpp.dev/", "https://dpp.dev/DPP-Logo.png")
-                .set_description("DESCRIPTION")
+                .set_author("KEI3AB", "https://github.com/KEI3AB", "https://avatars.githubusercontent.com/u/191717513?s=400&u=be1cfa463d8ce8d92501bed65666521050cf522c&v=4")
+                .set_description("I create it using D++ library")
                 .set_thumbnail("https://dpp.dev/DPP-Logo.png")
                 .add_field(
-                    "Regular field title",
-                    "Some value here"
+                    "The purpose of this bot",
+                    "I created this bot to practice my C++ programming skills"
                 )
                 .add_field(
-                    "Inline field there",
-                    "Some value here",
+                    "How does it help",
+                    "While you are creating a bot, you add various functionality to it. Because of this, it is constantly necessary to learn something new, for example, previously unknown libraries, methods, functions, etc.",
                     true
                 )
                 .add_field(
-                    "Inline field title NUM2",
-                    "SOME VALUE 2 HERE",
+                    "Advice",
+                    "If you want improve your hard skills, then create your own project like this. I wish you good luck!",
                     true
                 )
-                .set_image("https://dpp.dev/DPP-Logo.png")
+                .set_image("https://avatars.githubusercontent.com/u/191717513?s=400&u=be1cfa463d8ce8d92501bed65666521050cf522c&v=4")
                 .set_footer(
                     dpp::embed_footer()
-                    .set_text("Some footer text there")
-                    .set_icon("https://dpp.dev/DPP-Logo.png")
+                    .set_text("Also you can visit my github")
+                    .set_icon("https://avatars.githubusercontent.com/u/191717513?s=400&u=be1cfa463d8ce8d92501bed65666521050cf522c&v=4")
                 )
                 .set_timestamp(time(0));
 
@@ -105,12 +107,12 @@ int main() {
 
             event.reply(msg);
 
-        } else if (event.command.get_command_name() == "file") {
-            dpp::message msg(event.command.channel_id, "Hey there, I've got a new file!");
+        // } else if (event.command.get_command_name() == "file") {
+        //     dpp::message msg(event.command.channel_id, "Hey there, I've got a new file!");
 
-            msg.add_file("gay.txt", dpp::utility::read_file("/home/eldar/Desktop/practice/DiscordCurrencyBot/gay.txt"));
+        //     msg.add_file("file.txt", dpp::utility::read_file("/route/to/your/file.txt"));
 
-            event.reply(msg);
+        //     event.reply(msg);
 
         } else if (event.command.get_command_name() == "ping") {
             dpp::message msg(event.command.channel_id, "Pong!");
@@ -153,7 +155,17 @@ int main() {
         }
     });
 
+    std::thread fetcher_thread([]() {
+        try {
+            fetch_currency_rates();
+        } catch (const std::exception& error) {
+            std::cerr << "Error in fetch_currency_rates: " << error.what() << std::endl;
+        }
+    });
+
     bot.start(dpp::st_wait);
+
+    fetcher_thread.join();
 
     return 0;
 }

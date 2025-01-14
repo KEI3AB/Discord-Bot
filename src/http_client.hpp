@@ -1,24 +1,23 @@
 #ifndef HTTP_CLIENT
 #define HTTP_CLIENT
 
-#include <boost/asio.hpp>
-#include <functional>
+#include <boost/beast.hpp>
+#include <boost/asio/connect.hpp>
+#include <boost/asio/ip/tcp.hpp>
 #include <string>
 
+namespace http = boost::beast::http;
 
-class HttpClient {
+class Client {
 public:
-    explicit HttpClient(boost::asio::io_context& io_context);
+    Client(boost::asio::io_context& io_context,const std::string& MAIN_API, const std::string& API_ARGUMENTS);
 
-    void async_get(const std::string& host, const std::string& target,
-                   const std::function<void(const std::string&)>& on_success,
-                   const std::function<void(const std::string&)>& on_error);
+    void getResponse(const std::function<void(const std::string&)>& process);
 
 private:
-    boost::asio::ip::tcp::resolver resolver;
-    boost::asio::ip::tcp::socket socket;
-    boost::asio::streambuf response;
+    boost::asio::io_context& io_context;
+    const std::string MAIN_API;
+    const std::string API_ARGUMENTS;
 };
-
 
 #endif // HTTP_CLIENT

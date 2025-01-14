@@ -1,57 +1,35 @@
 #include "http_client.hpp"
-#include <iostream>
+#include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
+#include <functional>
 
-HttpClient::HttpClient(boost::asio::io_context& io_context)
-    : resolver(io_context), socket(io_context) {}
 
-void HttpClient::async_get(const std::string& host, const std::string& target,
-                           const std::function<void(const std::string&)>& on_success,
-                           const std::function<void(const std::string&)>& on_error) {
-    resolver.async_resolve(host, "80",
-        [this, host, target, on_success, on_error](const boost::system::error_code& error,
-                                                   boost::asio::ip::tcp::resolver::results_type results) {
 
-        if (error) {
-            on_error("Resolve error: " + error.message());
-            return;
-        }
+Client::Client(boost::asio::io_context& io_context,const std::string& MAIN_API, const std::string& API_ARGUMENTS)
+    : io_context(io_context), MAIN_API(MAIN_API), API_ARGUMENTS(API_ARGUMENTS) {}
 
-        boost::asio::async_connect(socket, results,
-            [this, host, target, on_success, on_error](const boost::system::error_code& error,
-                                                       const boost::asio::ip::tcp::endpoint&) {
+void Client::getResponse(const std::function<void(const std::string&)>& process) {
+    boost::asio::ip::tcp::resolver resolver(io_context);
+    boost::asio::ip::tcp::socket socket(io_context);
 
-            if (error) {
-                on_error("Connect error: " + error.message());
-                return;
-            }
+    boost::asio::connect(socket, resolver.resolve(MAIN_API, "80"));
 
-            std::ostream request_stream(&response);
-            request_stream << "GET " << target << " HTTP/1.1\r\n"
-                           << "Host: " << host << "\r\n"
-                           << "Connection: close\r\n\r\n";
-            
-            boost::asio::async_write(socket, response,
-                [this, on_success, on_error](const boost::system::error_code& error, std::size_t) {
+    http::request<http::string_body> req(http::verb::get, API_ARGUMENTS, 11);
 
-                if (error) {
-                    on_error("Send error: " + error.message());
-                    return;
-                }
+    req.set(http::field::host, MAIN_API);
+    req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
 
-                boost::asio::async_read(socket, response,
-                    [this, on_success, on_error](const boost::system::error_code& error, std::size_t) {
+    http::write(socket, req);
 
-                    if (error && error != boost::asio::error::eof) {
-                        on_error("Receive error: " + error.message());
-                        return;
-                    }
-                    
-                        // Если убрать внутренние скобки, то всё сломается. Не трогать!
-                    std::string data((std::istreambuf_iterator<char>(&response)), std::istreambuf_iterator<char>());
+    std::string response;
+    {
+        boost::beast::flat_buffer buffer;
+        http::response<http::dynamic_body> res;
+        http::read(socket, buffer, res);
+        response = boost::beast::buffers_to_string(res.body().data());
+    }
 
-                    on_success(data);
-                });
-            });
-        });
-    });
+    socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both);
+    
+    process(response);
 }

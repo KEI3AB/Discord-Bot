@@ -4,7 +4,7 @@ Scheduler::Scheduler(boost::asio::io_context& io_context, std::chrono::seconds i
     : timer(io_context), interval(interval) {}
 
 void Scheduler::start(const std::function<void()>& new_task) {
-    task = new_task; //
+    task = new_task; // Сохраняем лямбду в объекте
     schedule_next();
 }
 
